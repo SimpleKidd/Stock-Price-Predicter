@@ -8,20 +8,28 @@ import time
 import yfinance as yf
 import pickle
 import tensorflow as tf
-import json
 from streamlit_lottie import st_lottie
-
+import requests
 st.set_page_config(
     page_title="📈Closing Price"
 )
 
+def load_lottieurl(url: str):
+    r = requests.get(url)
+    if r.status_code != 200:
+        return None
+    return r.json()
 
-def load_lottiefile(filepath: str):
-    with open(filepath,"r") as f:
-        return json.load(f)
-    
-lottie_stocks=load_lottiefile("pages\stocks.json")  # replace link to local lottie file
-st_lottie(lottie_stocks,height=300,width=400)
+
+col1,col2=st.columns(2)
+
+with col1:
+    stocks=load_lottieurl("https://assets7.lottiefiles.com/packages/lf20_dwivte2j.json")
+    st_lottie(stocks)
+
+with col2:
+    stocks=load_lottieurl("https://assets4.lottiefiles.com/private_files/lf30_fgba6oco.json")
+    st_lottie(stocks)
 
 
 st.title('Predict Stock Price of any Company')
@@ -35,7 +43,7 @@ def inverse(a,b):
   return a*(m2-m1)+m1
 
 companyDict=joblib.load('company')
-company_name=st.selectbox("Enter Company Name",list(companyDict.keys()))
+company_name=st.selectbox("Select Company",list(companyDict.keys()))
 company_ticker=companyDict[company_name]
 
 def predict():
@@ -63,7 +71,7 @@ def predict():
     X_test,y_test=create_dataset(new_data[['Close']], new_data[['Close']],60)
 
     #Fine tuning the overall model trained
-    gru_model.fit(X_test,y_test,epochs=10,batch_size=8)
+    gru_model.fit(X_test,y_test,epochs=3,batch_size=8)
 
     new_x_test=np.array(new_data[len(company_data)-60:]).reshape(1,60,1)
     pred=gru_model.predict(new_x_test)
@@ -75,5 +83,3 @@ if(st.button('Predict Closing Price')):
       layer.trainable=False
     predicted_price=predict()
     st.write('The expected Closing Price tommorow is '+str(round(predicted_price,2)))
-
-
